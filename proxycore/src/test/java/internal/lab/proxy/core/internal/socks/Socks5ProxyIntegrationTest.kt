@@ -63,11 +63,8 @@ class Socks5ProxyIntegrationTest {
       out.write(connect)
       out.flush()
 
-      val response = ByteArray(4)
-      readFully(input, response)
-      assertEquals(0x05, response[0])
-      assertEquals(0x00, response[1])
-      assertEquals(0x00, response[2])
+      val rep = readSocksReply(input)
+      assertEquals(0x00, rep)
 
       val payload = byteArrayOf(1, 2, 3, 4, 5)
       out.write(payload)
@@ -117,10 +114,8 @@ class Socks5ProxyIntegrationTest {
       out.write(connect)
       out.flush()
 
-      val response = ByteArray(4)
-      readFully(input, response)
-      assertEquals(0x05, response[0])
-      assertEquals(0x00, response[1])
+      val rep = readSocksReply(input)
+      assertEquals(0x00, rep)
     } finally {
       target.close()
     }
@@ -164,6 +159,25 @@ class Socks5ProxyIntegrationTest {
       if (read == -1) throw IOException("Connection closed while reading")
       offset += read
     }
+  }
+
+  /** Reads a full SOCKS5 reply and returns the REP status byte. */
+  private fun readSocksReply(input: InputStream): Int {
+    val head = ByteArray(4)
+    readFully(input, head)
+    assertEquals(0x05, head[0])
+    val rep = head[1].toInt() and 0xFF
+    when (head[3].toInt() and 0xFF) {
+      0x01 -> readFully(input, ByteArray(6))
+      0x04 -> readFully(input, ByteArray(18))
+      0x03 -> {
+        val len = input.read()
+        if (len == -1) throw IOException("Connection closed while reading domain")
+        readFully(input, ByteArray(len + 2))
+      }
+      else -> throw IOException("Unexpected SOCKS address type")
+    }
+    return rep
   }
 
   private class EchoServer(
