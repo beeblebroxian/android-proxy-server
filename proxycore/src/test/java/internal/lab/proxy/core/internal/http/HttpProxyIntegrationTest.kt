@@ -269,7 +269,7 @@ class HttpProxyIntegrationTest {
   private data class HttpResponse(val head: String, val body: String)
 
   /** A single-connection target server that captures the request and replies. */
-  private class TargetServer(
+  private inner class TargetServer(
       private val responder: (String) -> String?,
   ) {
     private val server = ServerSocket(0, 1, java.net.InetAddress.getByName("127.0.0.1"))
