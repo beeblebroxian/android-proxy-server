@@ -114,7 +114,7 @@ internal class HttpProxySession(
   private fun runChunkedRelay(client: Socket, target: Socket, clientInput: InputStream) {
     val done = CountDownLatch(2)
     val clientToTarget =
-        Thread({
+        Thread.ofVirtual().name("proxy-http-c2t").start {
           try {
             forwardChunkedBody(clientInput, target.getOutputStream())
             shutdownOutputQuietly(target)
@@ -123,9 +123,9 @@ internal class HttpProxySession(
           } finally {
             done.countDown()
           }
-        }, "proxy-http-c2t").apply { isDaemon = true }
+        }
     val targetToClient =
-        Thread({
+        Thread.ofVirtual().name("proxy-http-t2c").start {
           try {
             copyRaw(target.getInputStream(), client.getOutputStream()) { bytes ->
               stats.received(bytes)
@@ -136,9 +136,7 @@ internal class HttpProxySession(
           } finally {
             done.countDown()
           }
-        }, "proxy-http-t2c").apply { isDaemon = true }
-    clientToTarget.start()
-    targetToClient.start()
+        }
     try {
       done.await()
     } catch (_: InterruptedException) {

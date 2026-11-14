@@ -32,10 +32,7 @@ internal class NativeProxyRuntime(
 
   suspend fun start(config: ProxyConfig) {
     val addresses = resolveBindAddresses(config.bindAddresses)
-    val newPool =
-        Executors.newCachedThreadPool { runnable ->
-          Thread(runnable, "proxy-worker").apply { isDaemon = true }
-        }
+    val newPool = Executors.newVirtualThreadPerTaskExecutor()
     synchronized(lock) {
       pool = newPool
       running = true
