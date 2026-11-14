@@ -1,6 +1,5 @@
 package internal.lab.proxy.core.internal.http
 
-import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.io.PushbackInputStream
 
@@ -27,25 +26,27 @@ internal data class HttpHead(
  * continue reading the body (or tunneled payload) without losing data.
  */
 internal fun readHttpHead(input: PushbackInputStream, maxBytes: Int = MAX_HEAD_BYTES): HttpHead {
-  val buffer = ByteArrayOutputStream()
+  val buffer = ByteArray(maxBytes + TERMINATOR.size)
+  var position = 0
   val chunk = ByteArray(READ_CHUNK)
-  val terminator = TERMINATOR
+  var searchStart = 0
   while (true) {
     val read = input.read(chunk)
     if (read == -1) throw IOException("Connection closed before HTTP head completed")
-    buffer.write(chunk, 0, read)
-    val bytes = buffer.toByteArray()
-    if (bytes.size > maxBytes) throw IOException("HTTP head exceeds $maxBytes bytes")
-    val end = indexOf(bytes, terminator)
+    if (position + read > maxBytes) throw IOException("HTTP head exceeds $maxBytes bytes")
+    System.arraycopy(chunk, 0, buffer, position, read)
+    position += read
+    val end = indexOf(buffer, searchStart, position, TERMINATOR)
     if (end >= 0) {
-      val headEnd = end + terminator.size
-      val leftover = bytes.size - headEnd
+      val headEnd = end + TERMINATOR.size
+      val leftover = position - headEnd
       if (leftover > 0) {
-        input.unread(bytes, headEnd, leftover)
+        input.unread(buffer, headEnd, leftover)
       }
-      val headText = String(bytes, 0, end, Charsets.ISO_8859_1)
+      val headText = String(buffer, 0, end, Charsets.ISO_8859_1)
       return parseHttpHead(headText)
     }
+    searchStart = maxOf(0, position - (TERMINATOR.size - 1))
   }
 }
 
@@ -89,9 +90,10 @@ internal fun HttpHead.toForwardedHead(target: HttpTarget): String {
   return builder.toString()
 }
 
-private fun indexOf(haystack: ByteArray, needle: ByteArray): Int {
-  if (needle.isEmpty() || haystack.size < needle.size) return -1
-  outer@ for (i in 0..haystack.size - needle.size) {
+private fun indexOf(haystack: ByteArray, fromIndex: Int, toIndex: Int, needle: ByteArray): Int {
+  if (needle.isEmpty() || toIndex - fromIndex < needle.size) return -1
+  val limit = toIndex - needle.size
+  outer@ for (i in fromIndex..limit) {
     for (j in needle.indices) {
       if (haystack[i + j] != needle[j]) continue@outer
     }
