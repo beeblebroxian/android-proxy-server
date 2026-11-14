@@ -246,8 +246,8 @@ internal class HttpProxySession(
 
   private companion object {
     const val CONNECT_TIMEOUT_MILLIS = 10_000
-    const val CHUNK_BUFFER = 16 * 1024
-    const val RELAY_BUFFER = 16 * 1024
+    const val CHUNK_BUFFER = 32 * 1024
+    const val RELAY_BUFFER = 32 * 1024
     const val STATUS_BAD_REQUEST = "HTTP/1.1 400 Bad Request"
     const val STATUS_BAD_GATEWAY = "HTTP/1.1 502 Bad Gateway"
   }

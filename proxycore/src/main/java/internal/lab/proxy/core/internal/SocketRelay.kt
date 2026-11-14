@@ -65,7 +65,7 @@ internal class SocketRelay(
   }
 
   private companion object {
-    const val BUFFER_SIZE = 16 * 1024
+    const val BUFFER_SIZE = 32 * 1024
   }
 }
 

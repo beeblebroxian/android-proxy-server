@@ -103,6 +103,6 @@ private fun indexOf(haystack: ByteArray, fromIndex: Int, toIndex: Int, needle: B
 }
 
 private const val MAX_HEAD_BYTES = 64 * 1024
-private const val READ_CHUNK = 4096
+private const val READ_CHUNK = 8192
 internal const val HEAD_PUSHBACK_SIZE = 8192
 private val TERMINATOR = "\r\n\r\n".toByteArray(Charsets.ISO_8859_1)
