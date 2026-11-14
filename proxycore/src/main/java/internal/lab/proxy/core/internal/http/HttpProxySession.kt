@@ -9,7 +9,6 @@ import java.io.BufferedInputStream
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
-import java.io.PushbackInputStream
 import java.net.InetSocketAddress
 import java.net.Socket
 import java.util.concurrent.CountDownLatch
@@ -21,12 +20,18 @@ internal class HttpProxySession(
     private val runtime: NativeProxyRuntime,
 ) : ProxySession {
   override fun run() {
-    val clientInput = PushbackInputStream(client.getInputStream(), HEAD_PUSHBACK_SIZE)
-    val head = try {
-      readHttpHead(clientInput)
+    val socketInput = client.getInputStream()
+    val headRead = try {
+      readHttpHead(socketInput)
     } catch (error: Throwable) {
       sendError(client, STATUS_BAD_REQUEST)
       return
+    }
+    val head = headRead.head
+    val clientInput: InputStream = if (headRead.leftover.isEmpty()) {
+      socketInput
+    } else {
+      PrefixInputStream(headRead.leftover, socketInput)
     }
 
     val target = try {
@@ -249,4 +254,39 @@ internal class HttpProxySession(
     const val STATUS_BAD_REQUEST = "HTTP/1.1 400 Bad Request"
     const val STATUS_BAD_GATEWAY = "HTTP/1.1 502 Bad Gateway"
   }
+}
+
+/**
+ * An [InputStream] that first yields [prefix] bytes and then delegates to [delegate].
+ *
+ * Unlike [java.io.PushbackInputStream], array reads never block while prefix bytes
+ * remain: they return only the prefix bytes and leave [delegate] untouched until the
+ * prefix is fully consumed. This prevents buffered readers from over-reading into the
+ * delegate socket and blocking when no more data has arrived yet.
+ */
+internal class PrefixInputStream(
+    private val prefix: ByteArray,
+    private val delegate: InputStream,
+) : InputStream() {
+  private var prefixPos = 0
+
+  override fun read(): Int {
+    if (prefixPos < prefix.size) return prefix[prefixPos++].toInt() and 0xFF
+    return delegate.read()
+  }
+
+  override fun read(b: ByteArray, off: Int, len: Int): Int {
+    if (len == 0) return 0
+    if (prefixPos < prefix.size) {
+      val count = minOf(len, prefix.size - prefixPos)
+      System.arraycopy(prefix, prefixPos, b, off, count)
+      prefixPos += count
+      return count
+    }
+    return delegate.read(b, off, len)
+  }
+
+  override fun available(): Int = (prefix.size - prefixPos) + delegate.available()
+
+  override fun close() = delegate.close()
 }

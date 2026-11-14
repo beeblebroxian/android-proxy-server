@@ -1,7 +1,7 @@
 package internal.lab.proxy.core.internal.http
 
 import java.io.IOException
-import java.io.PushbackInputStream
+import java.io.InputStream
 
 internal data class HttpHeader(val name: String, val value: String)
 
@@ -19,13 +19,16 @@ internal data class HttpHead(
   fun hasHeader(name: String): Boolean = header(name) != null
 }
 
+/** Result of reading an HTTP head: the parsed head plus any bytes read past it. */
+internal data class HttpHeadRead(val head: HttpHead, val leftover: ByteArray)
+
 /**
  * Reads and parses an HTTP/1.x request head (request line + headers).
  *
- * Bytes read past the head terminator are pushed back onto [input] so the caller can
- * continue reading the body (or tunneled payload) without losing data.
+ * Bytes read past the head terminator are returned as [HttpHeadRead.leftover] so the
+ * caller can prepend them to the body (or tunneled payload) without losing data.
  */
-internal fun readHttpHead(input: PushbackInputStream, maxBytes: Int = MAX_HEAD_BYTES): HttpHead {
+internal fun readHttpHead(input: InputStream, maxBytes: Int = MAX_HEAD_BYTES): HttpHeadRead {
   val buffer = ByteArray(maxBytes + TERMINATOR.size)
   var position = 0
   val chunk = ByteArray(READ_CHUNK)
@@ -39,12 +42,10 @@ internal fun readHttpHead(input: PushbackInputStream, maxBytes: Int = MAX_HEAD_B
     val end = indexOf(buffer, searchStart, position, TERMINATOR)
     if (end >= 0) {
       val headEnd = end + TERMINATOR.size
-      val leftover = position - headEnd
-      if (leftover > 0) {
-        input.unread(buffer, headEnd, leftover)
-      }
+      val leftoverCount = position - headEnd
+      val leftover = if (leftoverCount > 0) buffer.copyOfRange(headEnd, position) else ByteArray(0)
       val headText = String(buffer, 0, end, Charsets.ISO_8859_1)
-      return parseHttpHead(headText)
+      return HttpHeadRead(parseHttpHead(headText), leftover)
     }
     searchStart = maxOf(0, position - (TERMINATOR.size - 1))
   }
@@ -104,5 +105,4 @@ private fun indexOf(haystack: ByteArray, fromIndex: Int, toIndex: Int, needle: B
 
 private const val MAX_HEAD_BYTES = 64 * 1024
 private const val READ_CHUNK = 8192
-internal const val HEAD_PUSHBACK_SIZE = 8192
 private val TERMINATOR = "\r\n\r\n".toByteArray(Charsets.ISO_8859_1)
