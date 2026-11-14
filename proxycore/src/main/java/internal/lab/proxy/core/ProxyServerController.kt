@@ -1,6 +1,6 @@
 package internal.lab.proxy.core
 
-import internal.lab.proxy.core.internal.ProxyRuntime
+import internal.lab.proxy.core.internal.NativeProxyRuntime
 import internal.lab.proxy.core.internal.StatsTracker
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -13,7 +13,7 @@ public class ProxyServerController {
   private val lifecycleMutex = Mutex()
   private val statsTracker = StatsTracker()
   private val mutableConfig = MutableStateFlow<ProxyConfig?>(null)
-  private var runtime: ProxyRuntime? = null
+  private var runtime: NativeProxyRuntime? = null
 
   public val stats: StateFlow<ProxyStats> = statsTracker.stats
 
@@ -39,7 +39,7 @@ public class ProxyServerController {
   public suspend fun stop(): Unit = lifecycleMutex.withLock { stopLocked() }
 
   private suspend fun startLocked(config: ProxyConfig) {
-    val nextRuntime = ProxyRuntime(statsTracker)
+    val nextRuntime = NativeProxyRuntime(statsTracker)
     statsTracker.starting()
     try {
       nextRuntime.start(config)

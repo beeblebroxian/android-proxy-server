@@ -17,14 +17,6 @@ android {
   }
 
   buildFeatures { buildConfig = false }
-
-  packaging {
-    resources.pickFirsts +=
-        setOf(
-            "META-INF/INDEX.LIST",
-            "META-INF/io.netty.versions.properties",
-        )
-  }
 }
 
 kotlin {
@@ -36,8 +28,6 @@ kotlin {
 
 dependencies {
   api(libs.kotlinx.coroutines)
-  implementation(libs.netty.codec.http)
-  implementation(libs.netty.codec.socks)
   implementation(libs.slf4j.nop)
 
   testImplementation(libs.junit)

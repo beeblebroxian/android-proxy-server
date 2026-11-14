@@ -1,0 +1,106 @@
+package internal.lab.proxy.core.internal.http
+
+import java.io.ByteArrayOutputStream
+import java.io.IOException
+import java.io.PushbackInputStream
+
+internal data class HttpHeader(val name: String, val value: String)
+
+internal data class HttpHead(
+    val method: String,
+    val uri: String,
+    val version: String,
+    val headers: List<HttpHeader>,
+) {
+  fun header(name: String): String? {
+    val lower = name.lowercase()
+    return headers.firstOrNull { it.name.lowercase() == lower }?.value
+  }
+
+  fun hasHeader(name: String): Boolean = header(name) != null
+}
+
+/**
+ * Reads and parses an HTTP/1.x request head (request line + headers).
+ *
+ * Bytes read past the head terminator are pushed back onto [input] so the caller can
+ * continue reading the body (or tunneled payload) without losing data.
+ */
+internal fun readHttpHead(input: PushbackInputStream, maxBytes: Int = MAX_HEAD_BYTES): HttpHead {
+  val buffer = ByteArrayOutputStream()
+  val chunk = ByteArray(READ_CHUNK)
+  val terminator = TERMINATOR
+  while (true) {
+    val read = input.read(chunk)
+    if (read == -1) throw IOException("Connection closed before HTTP head completed")
+    buffer.write(chunk, 0, read)
+    val bytes = buffer.toByteArray()
+    if (bytes.size > maxBytes) throw IOException("HTTP head exceeds $maxBytes bytes")
+    val end = indexOf(bytes, terminator)
+    if (end >= 0) {
+      val headEnd = end + terminator.size
+      val leftover = bytes.size - headEnd
+      if (leftover > 0) {
+        input.unread(bytes, headEnd, leftover)
+      }
+      val headText = String(bytes, 0, end, Charsets.ISO_8859_1)
+      return parseHttpHead(headText)
+    }
+  }
+}
+
+private fun parseHttpHead(headText: String): HttpHead {
+  val lines = headText.split("\r\n")
+  require(lines.isNotEmpty()) { "Empty HTTP head" }
+  val requestLine = lines[0]
+  val parts = requestLine.split(" ")
+  require(parts.size == 3) { "Malformed HTTP request line: $requestLine" }
+  val method = parts[0]
+  val uri = parts[1]
+  val version = parts[2]
+  require(method.isNotBlank() && uri.isNotBlank() && version.startsWith("HTTP/")) {
+    "Malformed HTTP request line: $requestLine"
+  }
+  val headers = mutableListOf<HttpHeader>()
+  for (i in 1 until lines.size) {
+    val line = lines[i]
+    if (line.isEmpty()) continue
+    val colon = line.indexOf(':')
+    require(colon > 0) { "Malformed HTTP header: $line" }
+    val name = line.substring(0, colon).trim()
+    val value = line.substring(colon + 1).trim()
+    headers.add(HttpHeader(name, value))
+  }
+  return HttpHead(method, uri, version, headers)
+}
+
+/** Builds the forwarded request head for a non-tunnel request. */
+internal fun HttpHead.toForwardedHead(target: HttpTarget): String {
+  val builder = StringBuilder()
+  builder.append(method).append(' ').append(target.originForm).append(' ').append(version).append("\r\n")
+  for (header in headers) {
+    val lower = header.name.lowercase()
+    if (lower == "proxy-connection" || lower == "proxy-authorization" || lower == "connection") {
+      continue
+    }
+    builder.append(header.name).append(": ").append(header.value).append("\r\n")
+  }
+  builder.append("Connection: close\r\n\r\n")
+  return builder.toString()
+}
+
+private fun indexOf(haystack: ByteArray, needle: ByteArray): Int {
+  if (needle.isEmpty() || haystack.size < needle.size) return -1
+  outer@ for (i in 0..haystack.size - needle.size) {
+    for (j in needle.indices) {
+      if (haystack[i + j] != needle[j]) continue@outer
+    }
+    return i
+  }
+  return -1
+}
+
+private const val MAX_HEAD_BYTES = 64 * 1024
+private const val READ_CHUNK = 4096
+internal const val HEAD_PUSHBACK_SIZE = 8192
+private val TERMINATOR = "\r\n\r\n".toByteArray(Charsets.ISO_8859_1)

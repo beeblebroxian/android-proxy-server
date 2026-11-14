@@ -1,8 +1,6 @@
 package internal.lab.proxy.core.internal
 
 import internal.lab.proxy.core.ProxyStats
-import io.netty.buffer.ByteBuf
-import io.netty.buffer.ByteBufHolder
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -67,23 +65,13 @@ internal class StatsTracker {
   fun connectionClosed() =
       mutableStats.update { it.copy(activeConnections = (it.activeConnections - 1).coerceAtLeast(0)) }
 
-  fun sent(message: Any) {
-    val count =
-        when (message) {
-          is ByteBuf -> message.readableBytes().toLong()
-          is ByteBufHolder -> message.content().readableBytes().toLong()
-          else -> return
-        }
-    mutableStats.update { it.copy(sentBytes = it.sentBytes + count) }
+  fun sent(bytes: Long) {
+    if (bytes <= 0) return
+    mutableStats.update { it.copy(sentBytes = it.sentBytes + bytes) }
   }
 
-  fun received(message: Any) {
-    val count =
-        when (message) {
-          is ByteBuf -> message.readableBytes().toLong()
-          is ByteBufHolder -> message.content().readableBytes().toLong()
-          else -> return
-        }
-    mutableStats.update { it.copy(receivedBytes = it.receivedBytes + count) }
+  fun received(bytes: Long) {
+    if (bytes <= 0) return
+    mutableStats.update { it.copy(receivedBytes = it.receivedBytes + bytes) }
   }
 }

@@ -72,10 +72,7 @@ android {
   sourceSets.getByName("main").assets.directories.add(licenseAssetsDirectory.get().asFile.path)
 
   packaging {
-    resources.excludes += setOf(
-        "META-INF/INDEX.LIST",
-        "META-INF/io.netty.versions.properties",
-    )
+    resources.excludes += setOf("META-INF/INDEX.LIST")
   }
 
   compileOptions {

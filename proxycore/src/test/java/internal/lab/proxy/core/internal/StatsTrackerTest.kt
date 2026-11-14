@@ -1,6 +1,5 @@
 package internal.lab.proxy.core.internal
 
-import io.netty.buffer.Unpooled
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -21,14 +20,9 @@ class StatsTrackerTest {
   @Test
   fun startingNewSessionClearsPreviousCounters() {
     val tracker = StatsTracker()
-    val payload = Unpooled.wrappedBuffer(byteArrayOf(1, 2, 3, 4))
-    try {
-      tracker.connectionOpened()
-      tracker.sent(payload)
-      tracker.received(payload)
-    } finally {
-      payload.release()
-    }
+    tracker.connectionOpened()
+    tracker.sent(4)
+    tracker.received(4)
 
     tracker.starting()
     tracker.running()
