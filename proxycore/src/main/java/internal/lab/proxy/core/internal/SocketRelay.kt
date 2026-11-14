@@ -17,16 +17,14 @@ internal class SocketRelay(
 
   fun run() {
     val done = CountDownLatch(2)
-    val clientToTarget =
-        Thread.ofVirtual().name("proxy-relay-c2t").start {
-          copy(clientInput, target.getOutputStream(), target, sent = true)
-          done.countDown()
-        }
-    val targetToClient =
-        Thread.ofVirtual().name("proxy-relay-t2c").start {
-          copy(target.getInputStream(), client.getOutputStream(), client, sent = false)
-          done.countDown()
-        }
+    Thread({
+      copy(clientInput, target.getOutputStream(), target, sent = true)
+      done.countDown()
+    }, "proxy-relay-c2t").apply { isDaemon = true }.start()
+    Thread({
+      copy(target.getInputStream(), client.getOutputStream(), client, sent = false)
+      done.countDown()
+    }, "proxy-relay-t2c").apply { isDaemon = true }.start()
     try {
       done.await()
     } catch (_: InterruptedException) {
