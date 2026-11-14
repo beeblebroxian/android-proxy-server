@@ -16,13 +16,15 @@ import io.netty.channel.socket.nio.NioServerSocketChannel
 import io.netty.util.concurrent.GlobalEventExecutor
 import java.net.InetSocketAddress
 import java.net.Socket
-import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.withTimeout
 
 internal class ProxyRuntime(private val stats: StatsTracker) {
   private val channels: ChannelGroup = DefaultChannelGroup(GlobalEventExecutor.INSTANCE, true)
-  private val healthProbes = ConcurrentHashMap<Int, CompletableFuture<Unit>>()
+  private val healthProbes = ConcurrentHashMap<Int, CompletableDeferred<Unit>>()
   private var bossGroup: EventLoopGroup? = null
   private var workerGroup: EventLoopGroup? = null
 
@@ -105,8 +107,8 @@ internal class ProxyRuntime(private val stats: StatsTracker) {
     return true
   }
 
-  private fun verifyListener(protocol: String, port: Int) {
-    val completion = CompletableFuture<Unit>()
+  private suspend fun verifyListener(protocol: String, port: Int) {
+    val completion = CompletableDeferred<Unit>()
     Socket().use { socket ->
       socket.bind(InetSocketAddress(LOOPBACK_HOST, 0))
       val sourcePort = socket.localPort
@@ -116,7 +118,11 @@ internal class ProxyRuntime(private val stats: StatsTracker) {
             InetSocketAddress(LOOPBACK_HOST, port),
             HEALTH_CHECK_TIMEOUT_MILLIS,
         )
-        completion.get(HEALTH_CHECK_TIMEOUT_MILLIS.toLong(), TimeUnit.MILLISECONDS)
+        withTimeout(HEALTH_CHECK_TIMEOUT_MILLIS.toLong()) { completion.await() }
+      } catch (error: TimeoutCancellationException) {
+        throw IllegalStateException("$protocol listener self-test failed on port $port", error)
+      } catch (error: CancellationException) {
+        throw error
       } catch (error: Throwable) {
         throw IllegalStateException("$protocol listener self-test failed on port $port", error)
       } finally {

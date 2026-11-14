@@ -4,6 +4,8 @@ English | [简体中文](README.zh-CN.md)
 
 An independent, minimal, open-source, and ad-free HTTP/SOCKS5 proxy server for Android.
 
+Requires Android 6.0 (API 23) or later.
+
 <img src="art/app-icon.png" width="160" alt="Android Proxy Server icon">
 
 ## Screenshot

@@ -1,5 +1,5 @@
 [versions]
-minSdk = "26"
+minSdk = "23"
 targetSdk = "36"
 compileSdk = "36"
 
@@ -14,6 +14,7 @@ composeMaterial3 = "1.4.0"
 
 netty = "4.2.16.Final"
 slf4j = "2.0.18"
+desugarJdkLibs = "2.1.5"
 
 junit = "4.13.2"
 
@@ -37,5 +38,6 @@ kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-cor
 netty-codec-http = { group = "io.netty", name = "netty-codec-http", version.ref = "netty" }
 netty-codec-socks = { group = "io.netty", name = "netty-codec-socks", version.ref = "netty" }
 slf4j-nop = { group = "org.slf4j", name = "slf4j-nop", version.ref = "slf4j" }
+desugar-jdk-libs = { group = "com.android.tools", name = "desugar_jdk_libs", version.ref = "desugarJdkLibs" }
 
 junit = { group = "junit", name = "junit", version.ref = "junit" }

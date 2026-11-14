@@ -4,6 +4,8 @@
 
 一个独立、极简、开源、无广告的 Android HTTP/SOCKS5 代理服务器。
 
+需要 Android 6.0（API 23）或更高版本。
+
 <img src="art/app-icon.png" width="160" alt="Android Proxy Server 图标">
 
 ## 截图

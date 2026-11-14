@@ -74,6 +74,7 @@ android {
   }
 
   compileOptions {
+    isCoreLibraryDesugaringEnabled = true
     sourceCompatibility = JavaVersion.VERSION_21
     targetCompatibility = JavaVersion.VERSION_21
   }
@@ -87,6 +88,8 @@ configurations.configureEach {
 
 dependencies {
   implementation(project(":proxycore"))
+
+  coreLibraryDesugaring(libs.desugar.jdk.libs)
 
   implementation(libs.androidx.activity.compose)
   implementation(libs.androidx.core)
