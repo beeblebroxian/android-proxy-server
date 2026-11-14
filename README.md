@@ -37,7 +37,7 @@ See the illustrated [Getting Started Guide](docs/GETTING_STARTED.md) for protoco
 
 The app contains no advertising, analytics, telemetry, crash reporting, accounts, purchases, rating prompts, remote configuration, or automatic-update SDKs. Settings remain in Android private app storage, while traffic statistics and session logs remain in memory and are cleared when the service stops.
 
-The proxy has no authentication and listens on `0.0.0.0`. Enable it only on trusted networks and never expose its ports directly to the internet.
+The proxy has no authentication. By default it listens only on local network interfaces, excluding cellular and VPN interfaces; an optional setting exposes it on all interfaces. Enable it only on trusted networks and never expose its ports directly to the internet.
 
 Read the [Privacy Policy](PRIVACY.md) and [Security Policy](SECURITY.md) for details.
 

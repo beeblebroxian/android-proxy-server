@@ -1,15 +1,16 @@
 package internal.lab.proxy
 
 import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import java.net.Inet4Address
-import java.net.NetworkInterface
-import java.util.Collections
 
 data class ProxySettings(
     val httpEnabled: Boolean = false,
     val httpPort: Int = 8080,
     val socksEnabled: Boolean = false,
     val socksPort: Int = 1080,
+    val bindAllInterfaces: Boolean = false,
 )
 
 data class RuntimeSnapshot(
@@ -34,6 +35,7 @@ class ProxyPreferences(context: Context) {
         httpPort = preferences.getInt(KEY_HTTP_PORT, 8080),
         socksEnabled = preferences.getBoolean(KEY_SOCKS_ENABLED, false),
         socksPort = preferences.getInt(KEY_SOCKS_PORT, 1080),
+        bindAllInterfaces = preferences.getBoolean(KEY_BIND_ALL_INTERFACES, false),
     )
 
     fun write(settings: ProxySettings) {
@@ -42,6 +44,7 @@ class ProxyPreferences(context: Context) {
             .putInt(KEY_HTTP_PORT, settings.httpPort)
             .putBoolean(KEY_SOCKS_ENABLED, settings.socksEnabled)
             .putInt(KEY_SOCKS_PORT, settings.socksPort)
+            .putBoolean(KEY_BIND_ALL_INTERFACES, settings.bindAllInterfaces)
             .apply()
     }
 
@@ -51,23 +54,27 @@ class ProxyPreferences(context: Context) {
         const val KEY_HTTP_PORT = "http_port"
         const val KEY_SOCKS_ENABLED = "socks_enabled"
         const val KEY_SOCKS_PORT = "socks_port"
+        const val KEY_BIND_ALL_INTERFACES = "bind_all_interfaces"
     }
 }
 
-fun localIpv4Addresses(): List<String> = runCatching {
-    Collections.list(NetworkInterface.getNetworkInterfaces())
-        .asSequence()
-        .filter { network ->
-            val name = network.name.lowercase()
-            network.isUp && !network.isLoopback && EXCLUDED_INTERFACE_PARTS.none(name::contains)
+fun lanBindAddresses(context: Context): List<String> {
+    val connectivity = context.getSystemService(ConnectivityManager::class.java) ?: return emptyList()
+    val addresses = mutableSetOf<String>()
+    for (network in connectivity.allNetworks) {
+        val capabilities = connectivity.getNetworkCapabilities(network) ?: continue
+        if (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_VPN)) continue
+        if (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)) continue
+        val isLan = capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
+        if (!isLan) continue
+        val properties = connectivity.getLinkProperties(network) ?: continue
+        for (linkAddress in properties.linkAddresses) {
+            val inet = linkAddress.address
+            if (inet is Inet4Address && !inet.isLoopbackAddress && !inet.isLinkLocalAddress && !inet.isAnyLocalAddress) {
+                inet.hostAddress?.let(addresses::add)
+            }
         }
-        .flatMap { network -> Collections.list(network.inetAddresses).asSequence() }
-        .filterIsInstance<Inet4Address>()
-        .filterNot { it.isLoopbackAddress || it.isLinkLocalAddress || it.isAnyLocalAddress }
-        .mapNotNull { it.hostAddress }
-        .distinct()
-        .sorted()
-        .toList()
-}.getOrDefault(emptyList())
-
-private val EXCLUDED_INTERFACE_PARTS = listOf("tun", "tap", "p2p", "rmnet")
+    }
+    return addresses.sorted()
+}

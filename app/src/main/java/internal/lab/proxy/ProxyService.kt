@@ -137,11 +137,17 @@ class ProxyService : Service() {
             return
         }
 
+        val bindAddresses = if (settings.bindAllInterfaces) {
+            emptyList()
+        } else {
+            lanBindAddresses(this).ifEmpty { listOf("127.0.0.1") }
+        }
         val config = ProxyConfig(
             httpEnabled = settings.httpEnabled,
             httpPort = settings.httpPort,
             socksEnabled = settings.socksEnabled,
             socksPort = settings.socksPort,
+            bindAddresses = bindAddresses,
         )
         runCatching { controller.reconfigure(config) }
             .onSuccess {

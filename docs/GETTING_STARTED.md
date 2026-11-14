@@ -101,6 +101,6 @@ Applications, browsers, and proxy clients may open short health-check or DNS-rel
 
 ## Safety
 
-The proxy listens on all local interfaces and has no authentication. Use it only on a trusted LAN, stop it when not needed, and never forward ports `8080` or `1080` from a public router to the phone.
+The proxy listens on local network interfaces by default (cellular and VPN interfaces are excluded) and has no authentication. Use it only on a trusted LAN, keep "Allow all interfaces" off unless required, stop it when not needed, and never forward ports `8080` or `1080` from a public router to the phone.
 
 Read the [Security Policy](../SECURITY.md) and [Privacy Policy](../PRIVACY.md) for more details.

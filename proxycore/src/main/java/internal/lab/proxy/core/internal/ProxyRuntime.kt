@@ -35,11 +35,14 @@ internal class ProxyRuntime(private val stats: StatsTracker) {
     workerGroup = worker
 
     try {
+      val bindAddresses = resolveBindAddresses(config.bindAddresses)
       if (config.httpEnabled) {
-        bind("HTTP", config.httpPort, boss, worker, HttpProxyInitializer(channels, stats))
+        bindAll("HTTP", config.httpPort, boss, worker, HttpProxyInitializer(channels, stats), bindAddresses)
+        verifyListener("HTTP", config.httpPort)
       }
       if (config.socksEnabled) {
-        bind("SOCKS", config.socksPort, boss, worker, Socks5ProxyInitializer(channels, stats))
+        bindAll("SOCKS", config.socksPort, boss, worker, Socks5ProxyInitializer(channels, stats), bindAddresses)
+        verifyListener("SOCKS", config.socksPort)
       }
     } catch (error: Throwable) {
       stop()
@@ -55,12 +58,31 @@ internal class ProxyRuntime(private val stats: StatsTracker) {
     workerGroup = null
   }
 
+  private fun resolveBindAddresses(bindAddresses: List<String>): List<String> {
+    if (bindAddresses.isEmpty()) return listOf(LISTEN_HOST)
+    return (listOf(LOOPBACK_HOST) + bindAddresses).distinct()
+  }
+
+  private suspend fun bindAll(
+      protocol: String,
+      port: Int,
+      boss: EventLoopGroup,
+      worker: EventLoopGroup,
+      protocolInitializer: ChannelInitializer<SocketChannel>,
+      addresses: List<String>,
+  ) {
+    for (address in addresses) {
+      bind(protocol, port, boss, worker, protocolInitializer, address)
+    }
+  }
+
   private suspend fun bind(
       protocol: String,
       port: Int,
       boss: EventLoopGroup,
       worker: EventLoopGroup,
       protocolInitializer: ChannelInitializer<SocketChannel>,
+      address: String,
   ) {
     val bindFuture =
         ServerBootstrap()
@@ -88,15 +110,14 @@ internal class ProxyRuntime(private val stats: StatsTracker) {
                   }
                 }
             )
-            .bind(LISTEN_HOST, port)
+            .bind(address, port)
 
     try {
       bindFuture.awaitCompletion()
     } catch (error: Throwable) {
-      throw IllegalStateException("$protocol port $port is unavailable or already in use", error)
+      throw IllegalStateException("$protocol $address:$port is unavailable or already in use", error)
     }
     channels.add(bindFuture.channel())
-    verifyListener(protocol, port)
   }
 
   private fun completeHealthProbe(channel: SocketChannel): Boolean {

@@ -83,11 +83,11 @@ fun ProxyScreen(
                 SectionTitle("Proxy Details")
                 DetailRow(
                     "HTTP",
-                    listenerStatus(settings.httpEnabled, runtime.httpRunning, settings.httpPort, runtime.lastError),
+                    listenerStatus(settings.httpEnabled, runtime.httpRunning, settings.httpPort, runtime.lastError, settings.bindAllInterfaces),
                 )
                 DetailRow(
                     "SOCKS",
-                    listenerStatus(settings.socksEnabled, runtime.socksRunning, settings.socksPort, runtime.lastError),
+                    listenerStatus(settings.socksEnabled, runtime.socksRunning, settings.socksPort, runtime.lastError, settings.bindAllInterfaces),
                 )
 
                 SectionTitle("IP Addresses")
@@ -95,6 +95,12 @@ fun ProxyScreen(
                 else addresses.forEachIndexed { index, address ->
                     DetailRow(if (index == 0) "Local network" else "", address, monospace = true)
                 }
+
+                SectionTitle("Advanced")
+                BindAllInterfacesRow(
+                    enabled = settings.bindAllInterfaces,
+                    onToggle = { onSettingsChanged(settings.copy(bindAllInterfaces = it)) },
+                )
 
                 SectionTitle("Background Operation")
                 BatteryOptimizationRow(
@@ -185,6 +191,35 @@ private fun ProxyStatusBar(settings: ProxySettings, runtime: RuntimeSnapshot) {
             Text("↓ ${formatRate(runtime.receiveBytesPerSecond)}", fontFamily = FontFamily.Monospace, fontSize = 11.sp)
             Text("↑ ${formatRate(runtime.sendBytesPerSecond)}", fontFamily = FontFamily.Monospace, fontSize = 11.sp)
         }
+    }
+}
+
+@Composable
+private fun BindAllInterfacesRow(
+    enabled: Boolean,
+    onToggle: (Boolean) -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp).padding(horizontal = 20.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text("Allow all interfaces", style = MaterialTheme.typography.bodyLarge)
+            Spacer(Modifier.height(3.dp))
+            Text(
+                text = if (enabled) "Listening on every network, including cellular and VPN" else "Listening on local network only (recommended)",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 12.sp,
+            )
+        }
+        Switch(
+            checked = enabled,
+            onCheckedChange = onToggle,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = Color.White,
+                checkedTrackColor = MaterialTheme.colorScheme.primary,
+            ),
+        )
     }
 }
 
@@ -418,8 +453,8 @@ private fun formatBytes(bytes: Long): String {
 
 private fun formatRate(bytesPerSecond: Long): String = "${formatBytes(bytesPerSecond)}/s"
 
-private fun listenerStatus(enabled: Boolean, running: Boolean, port: Int, lastError: String?): String = when {
-    running -> "0.0.0.0:$port"
+private fun listenerStatus(enabled: Boolean, running: Boolean, port: Int, lastError: String?, bindAllInterfaces: Boolean): String = when {
+    running -> if (bindAllInterfaces) "0.0.0.0:$port" else "LAN:$port"
     !enabled -> "Stopped"
     lastError != null -> "Unavailable — see Session Log"
     else -> "Starting…"

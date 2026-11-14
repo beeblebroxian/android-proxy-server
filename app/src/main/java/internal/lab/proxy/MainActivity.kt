@@ -25,7 +25,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         preferences = ProxyPreferences(this)
         settings = preferences.read()
-        addresses = localIpv4Addresses()
+        addresses = lanBindAddresses(this)
         refreshBatteryOptimizationState()
         requestRuntimePermissions()
 
@@ -50,7 +50,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        addresses = localIpv4Addresses()
+        addresses = lanBindAddresses(this)
         refreshBatteryOptimizationState()
     }
 

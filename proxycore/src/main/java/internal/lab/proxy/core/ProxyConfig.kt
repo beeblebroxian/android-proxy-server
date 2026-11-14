@@ -6,6 +6,12 @@ public data class ProxyConfig(
     public val httpPort: Int = 8080,
     public val socksEnabled: Boolean,
     public val socksPort: Int = 1080,
+    /**
+     * Local addresses to bind the listeners to. When empty, listeners bind to all
+     * interfaces (`0.0.0.0`). When non-empty, listeners bind to loopback plus each
+     * listed address, which excludes cellular and VPN interfaces.
+     */
+    public val bindAddresses: List<String> = emptyList(),
 ) {
   init {
     require(httpPort in 1..65535) { "httpPort must be between 1 and 65535" }

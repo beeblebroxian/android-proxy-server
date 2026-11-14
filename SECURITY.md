@@ -6,8 +6,9 @@ Security fixes are applied to the latest version on the `master` branch. Older A
 
 ## Deployment Boundary
 
-Proxy is designed for a trusted local network. HTTP and SOCKS5 services do not implement authentication and listen on all local interfaces when enabled.
+Proxy is designed for a trusted local network. HTTP and SOCKS5 services do not implement authentication. By default they listen only on local network (Wi-Fi/Ethernet) interfaces and loopback, excluding cellular and VPN interfaces; an "Allow all interfaces" option in the app exposes them on every interface.
 
+- Keep "Allow all interfaces" off unless you specifically need cellular or VPN exposure.
 - Do not expose proxy ports directly to the internet.
 - Do not enable the server on untrusted public Wi-Fi or hotspot networks.
 - Use Android firewall or network-isolation controls when clients on the local network are not trusted.
