@@ -16,16 +16,16 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Proxy">
         <meta-data
-            android:name="com.hect0x7.proxy.SOURCE_REVISION"
+            android:name="internal.lab.proxy.SOURCE_REVISION"
             android:value="${sourceRevision}" />
-        <activity android:name="com.hect0x7.proxy.MainActivity" android:exported="true">
+        <activity android:name="internal.lab.proxy.MainActivity" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
         <service
-            android:name="com.hect0x7.proxy.ProxyService"
+            android:name="internal.lab.proxy.ProxyService"
             android:exported="false"
             android:foregroundServiceType="specialUse">
             <property

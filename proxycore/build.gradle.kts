@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-  namespace = "com.hect0x7.proxy.core"
+  namespace = "internal.lab.proxy.core"
   compileSdk = libs.versions.compileSdk.get().toInt()
 
   defaultConfig { minSdk = libs.versions.minSdk.get().toInt() }

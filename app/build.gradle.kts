@@ -26,11 +26,11 @@ val licenseAssets = tasks.register<Sync>("prepareLicenseAssets") {
 tasks.named("preBuild") { dependsOn(licenseAssets) }
 
 android {
-  namespace = "com.hect0x7.proxy"
+  namespace = "internal.lab.proxy"
   compileSdk = libs.versions.compileSdk.get().toInt()
 
   defaultConfig {
-    applicationId = "com.hect0x7.proxy"
+    applicationId = "internal.lab.proxy"
     minSdk = libs.versions.minSdk.get().toInt()
     targetSdk = libs.versions.targetSdk.get().toInt()
     versionCode = 3

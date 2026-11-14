@@ -1,18 +1,10 @@
-# Android Proxy Server
-
-English | [简体中文](README.zh-CN.md)
+# Proxy
 
 An independent, minimal, open-source, and ad-free HTTP/SOCKS5 proxy server for Android.
 
 Requires Android 6.0 (API 23) or later.
 
-<img src="art/app-icon.png" width="160" alt="Android Proxy Server icon">
-
-## Screenshot
-
-| App |
-|:---:|
-| <img src="art/app-screenshot.jpg" width="180" alt="Android Proxy Server running HTTP and SOCKS5 proxies"> |
+<img src="docs/images/app-icon.png" width="160" alt="Proxy icon">
 
 ## Features
 
@@ -64,7 +56,7 @@ Pushing to `master` runs tests and uploads Debug/Release APKs as temporary GitHu
 Release builds use a fixed signing certificate stored in repository Actions Secrets. Before publication, the workflow verifies the APK signature and confirms that its certificate matches the configured release keystore.
 
 ```text
-git tag -a v1.1.1 -m "Android Proxy Server v1.1.1"
+git tag -a v1.1.1 -m "Proxy v1.1.1"
 git push origin v1.1.1
 ```
 

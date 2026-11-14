@@ -1,7 +1,5 @@
 # Getting Started
 
-English | [简体中文](GETTING_STARTED.zh-CN.md)
-
 This guide explains the app without assuming prior proxy knowledge.
 
 <img src="images/lan-proxy-topology.png" width="900" alt="LAN clients connect through a router to the Android proxy server and then to the internet">
@@ -32,7 +30,7 @@ Do not configure the HTTP port as SOCKS5 or the SOCKS5 port as HTTP. Neither ser
 ## Setup
 
 1. Connect the Android phone and client device to the same trusted Wi-Fi or LAN.
-2. Open Android Proxy Server and note the displayed LAN address, for example `192.168.1.2`.
+2. Open Proxy and note the displayed LAN address, for example `192.168.1.2`.
 3. Enable HTTP, SOCKS5, or both.
 4. Enter the phone address and matching port in the client application.
 5. Keep the Android foreground-service notification active while using the proxy.

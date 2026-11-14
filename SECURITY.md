@@ -1,14 +1,12 @@
 # Security Policy
 
-English | [简体中文](SECURITY.zh-CN.md)
-
 ## Supported Versions
 
 Security fixes are applied to the latest version on the `master` branch. Older APK artifacts are not maintained after a newer release is available.
 
 ## Deployment Boundary
 
-Android Proxy Server is designed for a trusted local network. HTTP and SOCKS5 services do not implement authentication and listen on all local interfaces when enabled.
+Proxy is designed for a trusted local network. HTTP and SOCKS5 services do not implement authentication and listen on all local interfaces when enabled.
 
 - Do not expose proxy ports directly to the internet.
 - Do not enable the server on untrusted public Wi-Fi or hotspot networks.

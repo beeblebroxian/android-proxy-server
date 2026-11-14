@@ -5,13 +5,15 @@ These instructions apply to the entire `android-proxy-server` repository. They s
 ## Project Contract
 
 - The default branch is `master`.
-- This app is an independent Android HTTP and SOCKS5 proxy server.
+- This is a fork; its instructions override the upstream project's defaults.
+- The app is named **Proxy** and is an independent Android HTTP and SOCKS5 proxy server.
+- The application ID is `internal.lab.proxy`; the app package is `internal.lab.proxy` and the proxy-core package is `internal.lab.proxy.core`.
 - HTTP uses port `8080` by default.
 - SOCKS5 uses port `1080` by default.
 - Both protocols are unauthenticated. Do not add authentication, accounts, analytics, advertising, telemetry, crash reporting, remote configuration, or tracking without an explicit user request.
 - The app must not use Android `VpnService`, create a VPN interface, or claim the VPN slot.
 - Preserve operation alongside another active VPN. Proxy egress must continue to follow Android's current default route.
-- Keep the product focused on proxy serving. Do not add hotspot management, tethering controls, unrelated network tools, or inherited branding and features from other projects.
+- Keep the product focused on proxy serving. Do not add hotspot management, tethering controls, unrelated network tools, or branding/features inherited from other projects; this fork's identity is **Proxy** (`internal.lab.proxy`).
 
 ## Build And Test Policy
 
@@ -34,10 +36,7 @@ These instructions apply to the entire `android-proxy-server` repository. They s
 
 ## Documentation
 
-- English is the default documentation language.
-- Every user-facing Markdown document should have a matching Simplified Chinese file using the `.zh-CN.md` suffix, unless the file is intentionally language-neutral.
-- Keep English and Chinese documents behaviorally equivalent when changing commands, ports, capabilities, limitations, privacy claims, build instructions, or release instructions.
-- Keep language-switch links valid in both directions.
+- Documentation is English-only. Do not add `.zh-CN.md` files or language-switch links.
 - Use generic, privacy-safe values in diagrams, screenshots, command examples, tests, and troubleshooting steps.
 
 ## Signing Secrets
@@ -62,13 +61,13 @@ Perform a release only when the user explicitly requests one.
 6. Create an annotated tag named exactly `v${versionName}` on the validated commit.
 7. Push that tag to `origin`.
 8. Wait for GitHub Actions to run tests, build the APKs, verify the Release APK signature, and compare the APK certificate SHA-256 digest with the configured release keystore.
-9. Confirm the GitHub Release contains only the signed Release APK named `android-proxy-server-${versionName}-release.apk`.
+9. Confirm the GitHub Release contains only the signed Release APK named `proxy-${versionName}-release.apk`.
 10. Keep the Debug APK and dependency report in GitHub Actions Artifacts only; do not attach them to the GitHub Release.
 11. Verify the final Release page, tag, target commit, and APK attachment through GitHub or the GitHub API before reporting completion.
 
 ## Git Safety
 
-- Use the repository's configured commit identity unless the user specifies one. For user-authored commits in this repository, use `hect0x7 <93357912+hect0x7@users.noreply.github.com>` when requested.
+- Use the repository's configured commit identity unless the user specifies one.
 - Do not force-push, delete remote branches, tags, releases, Actions runs, artifacts, or other remote data without explicit authorization for that specific operation.
 - Prior authorization for one cleanup or history rewrite does not authorize future destructive operations.
 - Before pushing, confirm the target remote and branch, inspect the commits being sent, and repeat the privacy scan.

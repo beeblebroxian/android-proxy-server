@@ -1,8 +1,6 @@
 # Privacy Policy
 
-English | [简体中文](PRIVACY.zh-CN.md)
-
-Android Proxy Server provides only the local HTTP and SOCKS5 proxy services explicitly enabled by the user.
+Proxy provides only the local HTTP and SOCKS5 proxy services explicitly enabled by the user.
 
 ## Data Not Collected
 
