@@ -163,7 +163,7 @@ private fun ProxyStatusBar(settings: ProxySettings, runtime: RuntimeSnapshot) {
             if (runtime.httpRunning) add("HTTP")
             if (runtime.socksRunning) add("SOCKS")
         }.joinToString(" + ") + "  •  ${runtime.activeConnections} active"
-        failed -> runtime.lastError ?: "Listener verification failed"
+        failed -> runtime.lastError
         requested -> "Binding ports and checking local acceptance"
         else -> "Enable HTTP or SOCKS to start"
     }

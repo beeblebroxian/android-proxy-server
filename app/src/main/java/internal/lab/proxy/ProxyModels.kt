@@ -58,6 +58,7 @@ class ProxyPreferences(context: Context) {
     }
 }
 
+@Suppress("DEPRECATION")
 fun lanBindAddresses(context: Context): List<String> {
     val connectivity = context.getSystemService(ConnectivityManager::class.java) ?: return emptyList()
     val addresses = mutableSetOf<String>()
