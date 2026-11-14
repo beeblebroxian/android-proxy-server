@@ -4,10 +4,10 @@ This project is a fork of Android Proxy Server
 (https://github.com/hect0x7/android-proxy-server) by hect0x7.
 Original copyright and attribution are retained.
 
-This product includes software developed by the Android Open Source Project,
-JetBrains, and the Kotlin Coroutines project.
-Their respective licenses apply to those dependencies.
-
 HTTP proxy handling hardening and CI fixes are cherry-picked from the bovf
 fork (https://github.com/bovf/android-proxy-server) by Dobry Nikolov.
 Original copyright and attribution are retained.
+
+This product includes software developed by the Android Open Source Project,
+JetBrains, and the Kotlin Coroutines project.
+Their respective licenses apply to those dependencies.
