@@ -15,6 +15,9 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Proxy">
+        <meta-data
+            android:name="com.hect0x7.proxy.SOURCE_REVISION"
+            android:value="${sourceRevision}" />
         <activity android:name="com.hect0x7.proxy.MainActivity" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
