@@ -138,6 +138,6 @@ jobs:
           else
             gh release create "$GITHUB_REF_NAME" "$RELEASE_APK" \
               --verify-tag \
-              --title "Android Proxy Server $GITHUB_REF_NAME" \
+              --title "Proxy $GITHUB_REF_NAME" \
               --generate-notes
           fi

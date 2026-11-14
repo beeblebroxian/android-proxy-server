@@ -14,6 +14,6 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "AndroidProxyServer"
+rootProject.name = "Proxy"
 
 include(":app", ":proxycore")
