@@ -76,6 +76,19 @@ jobs:
           key_sha="$(keytool -list -v -keystore "$ANDROID_KEYSTORE_PATH" -storepass "$ANDROID_KEYSTORE_PASSWORD" -alias "$ANDROID_KEY_ALIAS" | sed -n 's/.*SHA256: //p' | tr -d ':')"
           test "${apk_sha,,}" = "${key_sha,,}"
 
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: test-reports
+          path: |
+            proxycore/build/reports/tests/testDebugUnitTest/
+            proxycore/build/test-results/testDebugUnitTest/
+            app/build/reports/tests/testDebugUnitTest/
+            app/build/test-results/testDebugUnitTest/
+          if-no-files-found: ignore
+          retention-days: 14
+
       - name: Generate dependency report
         run: |
           mkdir -p app/build/reports
