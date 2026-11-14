@@ -28,7 +28,6 @@ kotlin {
 
 dependencies {
   api(libs.kotlinx.coroutines)
-  implementation(libs.slf4j.nop)
 
   testImplementation(libs.junit)
   testImplementation(kotlin("test-junit"))

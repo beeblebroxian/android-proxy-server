@@ -12,7 +12,6 @@ activity = "1.13.0"
 compose = "1.11.4"
 composeMaterial3 = "1.4.0"
 
-slf4j = "2.0.18"
 desugarJdkLibs = "2.1.5"
 
 junit = "4.13.2"
@@ -34,7 +33,6 @@ kotlinx-coroutines = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutin
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines" }
 
-slf4j-nop = { group = "org.slf4j", name = "slf4j-nop", version.ref = "slf4j" }
 desugar-jdk-libs = { group = "com.android.tools", name = "desugar_jdk_libs", version.ref = "desugarJdkLibs" }
 
 junit = { group = "junit", name = "junit", version.ref = "junit" }
