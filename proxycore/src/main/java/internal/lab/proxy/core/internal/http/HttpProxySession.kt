@@ -5,6 +5,7 @@ import internal.lab.proxy.core.internal.ProxySession
 import internal.lab.proxy.core.internal.StatsTracker
 import internal.lab.proxy.core.internal.closeQuietly
 import internal.lab.proxy.core.internal.SocketRelay
+import java.io.BufferedInputStream
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
@@ -152,15 +153,16 @@ internal class HttpProxySession(
   }
 
   private fun forwardChunkedBody(clientInput: InputStream, targetOutput: OutputStream) {
+    val bufferedInput = BufferedInputStream(clientInput, CHUNK_BUFFER)
     while (true) {
-      val sizeLine = readLine(clientInput)
+      val sizeLine = readLine(bufferedInput)
       val sizeHex = sizeLine.substringBefore(';').trim()
       val size = sizeHex.toInt(16)
       targetOutput.write((sizeLine + "\r\n").toByteArray(Charsets.ISO_8859_1))
       if (size == 0) {
         val trailers = mutableListOf<String>()
         while (true) {
-          val line = readLine(clientInput)
+          val line = readLine(bufferedInput)
           if (line.isEmpty()) break
           trailers.add(line)
         }
@@ -176,12 +178,12 @@ internal class HttpProxySession(
       val buffer = ByteArray(minOf(remaining, CHUNK_BUFFER))
       while (remaining > 0) {
         val toRead = minOf(buffer.size, remaining)
-        val read = clientInput.read(buffer, 0, toRead)
+        val read = bufferedInput.read(buffer, 0, toRead)
         if (read == -1) throw IOException("Connection closed during chunked body")
         targetOutput.write(buffer, 0, read)
         remaining -= read
       }
-      readLine(clientInput)
+      readLine(bufferedInput)
       targetOutput.write("\r\n".toByteArray(Charsets.ISO_8859_1))
       targetOutput.flush()
     }
