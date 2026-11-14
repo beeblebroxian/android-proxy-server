@@ -1,7 +1,8 @@
 package internal.lab.proxy.core.internal.http
 
 import internal.lab.proxy.core.ProxyConfig
-import internal.lab.proxy.core.ProxyServerController
+import internal.lab.proxy.core.internal.NativeProxyRuntime
+import internal.lab.proxy.core.internal.StatsTracker
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.io.InputStream
@@ -20,7 +21,7 @@ import kotlin.test.assertTrue
 import kotlinx.coroutines.runBlocking
 
 class HttpProxyIntegrationTest {
-  private lateinit var controller: ProxyServerController
+  private lateinit var runtime: NativeProxyRuntime
   private var proxyPort = 0
 
   @BeforeTest
@@ -28,8 +29,8 @@ class HttpProxyIntegrationTest {
     val probe = ServerSocket(0)
     proxyPort = probe.localPort
     probe.close()
-    controller = ProxyServerController()
-    controller.start(
+    runtime = NativeProxyRuntime(StatsTracker(), enforceSelfConnectionGuard = false)
+    runtime.start(
         ProxyConfig(
             httpEnabled = true,
             httpPort = proxyPort,
@@ -40,7 +41,7 @@ class HttpProxyIntegrationTest {
   }
 
   @AfterTest
-  fun tearDown() = runBlocking { controller.stop() }
+  fun tearDown() = runBlocking { runtime.stop() }
 
   @Test
   fun forwardStripsProxyCredentialsAndPreservesAuthorization() {
@@ -52,9 +53,10 @@ class HttpProxyIntegrationTest {
       client.connect(InetSocketAddress("127.0.0.1", proxyPort), 5_000)
       client.soTimeout = 5_000
       val out = client.getOutputStream()
+      val targetAddress = "127.0.0.1:${target.port}"
       out.write(
-          ("GET http://example.com/path?q=1 HTTP/1.1\r\n" +
-                  "Host: example.com\r\n" +
+          ("GET http://$targetAddress/path?q=1 HTTP/1.1\r\n" +
+                  "Host: $targetAddress\r\n" +
                   "Proxy-Authorization: Basic synthetic-secret\r\n" +
                   "proxy-connection: keep-alive\r\n" +
                   "Authorization: Bearer token\r\n" +
@@ -80,16 +82,15 @@ class HttpProxyIntegrationTest {
 
   @Test
   fun connectTunnelsOpaqueBytes() {
-    val target = TargetServer { request ->
-      // Echo server: read whatever arrives and send it back, then close.
-      null
-    }
+    val target = TargetServer(null)
     try {
       val client = Socket()
       client.connect(InetSocketAddress("127.0.0.1", proxyPort), 5_000)
       client.soTimeout = 5_000
       val out = client.getOutputStream()
-      out.write("CONNECT example.com:443 HTTP/1.1\r\nHost: example.com:443\r\n\r\n".toByteArray())
+      out.write(
+          "CONNECT 127.0.0.1:${target.port} HTTP/1.1\r\nHost: 127.0.0.1:${target.port}\r\n\r\n"
+              .toByteArray())
       out.flush()
 
       val head = readHttpHead(PushbackInputStream(client.getInputStream(), 8192))
@@ -123,9 +124,10 @@ class HttpProxyIntegrationTest {
       client.connect(InetSocketAddress("127.0.0.1", proxyPort), 5_000)
       client.soTimeout = 5_000
       val out = client.getOutputStream()
+      val targetAddress = "127.0.0.1:${target.port}"
       val body =
-          "POST http://example.com/upload HTTP/1.1\r\n" +
-              "Host: example.com\r\n" +
+          "POST http://$targetAddress/upload HTTP/1.1\r\n" +
+              "Host: $targetAddress\r\n" +
               "Transfer-Encoding: chunked\r\n" +
               "\r\n" +
               "4\r\nping\r\n" +
@@ -270,7 +272,7 @@ class HttpProxyIntegrationTest {
 
   /** A single-connection target server that captures the request and replies. */
   private inner class TargetServer(
-      private val responder: (String) -> String?,
+      private val responder: ((String) -> String?)? = null,
   ) {
     private val server = ServerSocket(0, 1, java.net.InetAddress.getByName("127.0.0.1"))
     private val captured = java.util.concurrent.CopyOnWriteArrayList<String>()
@@ -282,22 +284,18 @@ class HttpProxyIntegrationTest {
             try {
               server.accept().use { socket ->
                 socket.soTimeout = 5_000
-                val request = readRequest(socket.getInputStream())
-                captured.add(request)
-                val response = responder(request)
-                if (response != null) {
-                  socket.getOutputStream().write(response.toByteArray(Charset.forName("ISO-8859-1")))
-                  socket.getOutputStream().flush()
+                val handler = responder
+                if (handler == null) {
+                  echo(socket)
                 } else {
-                  // Echo mode: relay until client closes.
-                  val input = socket.getInputStream()
-                  val output = socket.getOutputStream()
-                  val buffer = ByteArray(4096)
-                  while (true) {
-                    val read = input.read(buffer)
-                    if (read == -1) break
-                    output.write(buffer, 0, read)
-                    output.flush()
+                  val request = readRequest(socket.getInputStream())
+                  captured.add(request)
+                  val response = handler(request)
+                  if (response != null) {
+                    socket.getOutputStream().write(response.toByteArray(Charset.forName("ISO-8859-1")))
+                    socket.getOutputStream().flush()
+                  } else {
+                    echo(socket)
                   }
                 }
               }
@@ -306,6 +304,18 @@ class HttpProxyIntegrationTest {
             }
           }, "test-target").apply { isDaemon = true }
       thread.start()
+    }
+
+    private fun echo(socket: Socket) {
+      val input = socket.getInputStream()
+      val output = socket.getOutputStream()
+      val buffer = ByteArray(4096)
+      while (true) {
+        val read = input.read(buffer)
+        if (read == -1) break
+        output.write(buffer, 0, read)
+        output.flush()
+      }
     }
 
     val port: Int get() = server.localPort

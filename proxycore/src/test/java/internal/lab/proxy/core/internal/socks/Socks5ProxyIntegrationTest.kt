@@ -1,10 +1,12 @@
 package internal.lab.proxy.core.internal.socks
 
 import internal.lab.proxy.core.ProxyConfig
-import internal.lab.proxy.core.ProxyServerController
+import internal.lab.proxy.core.internal.NativeProxyRuntime
+import internal.lab.proxy.core.internal.StatsTracker
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.io.InputStream
+import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.net.ServerSocket
 import java.net.Socket
@@ -16,7 +18,7 @@ import kotlin.test.assertTrue
 import kotlinx.coroutines.runBlocking
 
 class Socks5ProxyIntegrationTest {
-  private lateinit var controller: ProxyServerController
+  private lateinit var runtime: NativeProxyRuntime
   private var proxyPort = 0
 
   @BeforeTest
@@ -24,8 +26,8 @@ class Socks5ProxyIntegrationTest {
     val probe = ServerSocket(0)
     proxyPort = probe.localPort
     probe.close()
-    controller = ProxyServerController()
-    controller.start(
+    runtime = NativeProxyRuntime(StatsTracker(), enforceSelfConnectionGuard = false)
+    runtime.start(
         ProxyConfig(
             httpEnabled = false,
             socksEnabled = true,
@@ -36,7 +38,7 @@ class Socks5ProxyIntegrationTest {
   }
 
   @AfterTest
-  fun tearDown() = runBlocking { controller.stop() }
+  fun tearDown() = runBlocking { runtime.stop() }
 
   @Test
   fun noAuthConnectRelaysBytes() {
@@ -96,7 +98,7 @@ class Socks5ProxyIntegrationTest {
 
   @Test
   fun connectWithDomainAddress() {
-    val target = EchoServer()
+    val target = EchoServer(InetAddress.getByName("localhost"))
     try {
       val client = Socket()
       client.connect(InetSocketAddress("127.0.0.1", proxyPort), 5_000)
@@ -164,8 +166,10 @@ class Socks5ProxyIntegrationTest {
     }
   }
 
-  private class EchoServer {
-    private val server = ServerSocket(0, 1, java.net.InetAddress.getByName("127.0.0.1"))
+  private class EchoServer(
+      bindAddress: InetAddress = InetAddress.getByName("127.0.0.1"),
+  ) {
+    private val server = ServerSocket(0, 1, bindAddress)
     private val thread: Thread
 
     init {

@@ -18,7 +18,10 @@ import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.withTimeout
 
 /** Native blocking-socket proxy runtime replacing the Netty-based one. */
-internal class NativeProxyRuntime(private val stats: StatsTracker) {
+internal class NativeProxyRuntime(
+    private val stats: StatsTracker,
+    private val enforceSelfConnectionGuard: Boolean = true,
+) {
   private val lock = Any()
   private val serverSockets = mutableListOf<ServerSocket>()
   private val acceptThreads = mutableListOf<Thread>()
@@ -144,7 +147,8 @@ internal class NativeProxyRuntime(private val stats: StatsTracker) {
           closeQuietly(client)
           continue
         }
-        if (isSelfConnection(client.localSocketAddress, client.remoteSocketAddress)) {
+        if (enforceSelfConnectionGuard &&
+            isSelfConnection(client.localSocketAddress, client.remoteSocketAddress)) {
           stats.localLoopBlocked()
           closeQuietly(client)
           continue
